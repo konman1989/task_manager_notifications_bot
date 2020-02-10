@@ -1,7 +1,6 @@
 from telebot import types
 
-from chats import add_user_to_db, subscribe_to_event, get_user_subscriptions, \
-    unsubscribe_from_events
+import handlers
 from main import bot
 
 EMOJI = {
@@ -19,7 +18,9 @@ def subscribe_menu(message):
     text = 'This is a notification channel. You can subscribe to receive ' \
            'updates about tasks or comments from the menu below. ' \
            'You can also unsubscribe from receiving notifications.'
-    add_user_to_db(message.chat.id)
+    # ????????????????????????????????
+    # add_user_to_db(message.chat.id)
+    # ????????????????????????????????
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
 
     markup.add(f'{EMOJI["subscribe"]} Subscribe',
@@ -46,23 +47,36 @@ def subscribe_to_menu(message):
                                     or x.text == f'{EMOJI["comment"]} Comments')
 def subscribe_to_events(message):
     event = message.text.split()[-1]
-    response = subscribe_to_event(message.chat.id, event.lower())
+    res = handlers.subscribe_user(message.chat.id, event.lower())
 
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     markup.add(f'{EMOJI["task"]} Tasks',
                f'{EMOJI["comment"]} Comments',
                f'{EMOJI["back"]} Back to main menu'
                )
+    if res == 201:
+        bot.send_message(message.chat.id,
+                         f"You have subscribed to receive notifications about"
+                         f" {event.lower()}.",
+                         reply_markup=markup)
 
-    bot.send_message(message.chat.id,
-                     response,
-                     reply_markup=markup)
+    elif res == 409:
+        bot.send_message(message.chat.id,
+                         f"You are already subscribed to receive notifications "
+                         f"about {event.lower()}.",
+                         reply_markup=markup)
+
+    elif res == 403:
+        bot.send_message(message.chat.id,
+                         "You are not registered with @BestTaskManagerBot. "
+                         "You need to create an account first.",
+                         reply_markup=markup)
 
 
 @bot.message_handler(
     func=lambda x: x.text == f'{EMOJI["subscription"]} My subscriptions')
 def get_subscriptions(message):
-    events = get_user_subscriptions(message.chat.id)
+    events = handlers.get_user_subscriptions(message.chat.id)
 
     if not events:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -82,6 +96,8 @@ def get_subscriptions(message):
                f'{EMOJI["back"]} Back to main menu'
                )
 
+    events = [e.get('event').title() for e in events]
+
     bot.send_message(message.chat.id,
                      f'You are subscribed to receive '
                      f'notifications about {", ".join(events).lower()}',
@@ -91,7 +107,8 @@ def get_subscriptions(message):
 @bot.message_handler(
     func=lambda x: x.text == f'{EMOJI["unsubscribe"]} Unsubscribe')
 def unsubscribe(message):
-    events = get_user_subscriptions(message.chat.id)
+    events = handlers.get_user_subscriptions(message.chat.id)
+
     if not events:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         markup.add(f'{EMOJI["task"]} Tasks',
@@ -104,6 +121,7 @@ def unsubscribe(message):
             reply_markup=markup)
         return
 
+    events = [e.get('event').title() for e in events]
     rows = [f'{EMOJI["unsubscribe"]} Unsubscribe {n}' for n in events]
 
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -120,20 +138,24 @@ def unsubscribe(message):
     func=lambda
             x: x.text == f'{EMOJI["unsubscribe"]} Unsubscribe Tasks' or
                x.text == f'{EMOJI["unsubscribe"]} Unsubscribe Comments')
-def delete_event_from_db(message):
+def unsubscribe_user(message):
     event = message.text.split()[-1]
-    unsubscribe_from_events(message.chat.id, event.lower())
+    res = handlers.unsubscribe_user(message.chat.id, event.lower())
 
-    events = get_user_subscriptions(message.chat.id)
+    events = handlers.get_user_subscriptions(message.chat.id)
+    events = [e.get('event').title() for e in events]
+
     rows = [f'{EMOJI["unsubscribe"]} Unsubscribe {n}' for n in events]
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     markup.add(*rows, f'{EMOJI["back"]} Back to main menu')
 
-    bot.send_message(message.chat.id,
-                     f"You have unsubscribed from "
-                     f"{message.text.replace('Unsubscribe ', '').lower()}.",
-                     reply_markup=markup)
-
+    if res == 200:
+        button = f'{EMOJI["unsubscribe"]} Unsubscribe '
+        bot.send_message(message.chat.id,
+                         f"You have unsubscribed from "
+                         f"{message.text.replace(button, '').lower()}.",
+                         reply_markup=markup)
+        return
 
 @bot.message_handler(
     func=lambda x: x.text == f'{EMOJI["back"]} Back to main menu')
@@ -143,7 +165,13 @@ def main_menu(message):
                f'{EMOJI["subscription"]} My subscriptions',
                f'{EMOJI["unsubscribe"]} Unsubscribe')
 
-    bot.send_message(message.chat.id, 'Main menu', reply_markup=markup)
+    bot.send_message(message.chat.id, 'Main Menu', reply_markup=markup)
+
+
+@bot.message_handler(func=lambda message: True, content_types=['text'])
+def unknown_command(message):
+    bot.send_message(message.chat.id,
+                     "Sorry, I didn't understand that command.")
 
 
 if __name__ == '__main__':

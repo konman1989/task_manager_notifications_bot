@@ -59,8 +59,8 @@ def subscribe_to_event(chat_id, event):
             )
             return f'You have subscribed to receive notifications about {event}.'
         except sqlite3.IntegrityError:
-            return f'You are already subscribed to receive notifications from ' \
-                   f'{event}'
+            return f'You are already subscribed to receive notifications from'\
+                   f' {event}'
 
 
 def unsubscribe_from_events(chat_id, event):

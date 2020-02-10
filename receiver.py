@@ -9,7 +9,7 @@ def callback(ch, method, properties, body):
     message = json.loads(body)
     print(message)
     print(type(message))
-    print(message[1])
+    # print(message[1])
 
     for chat_id in get_chat_ids(message[0]):
         bot.send_message(chat_id,
