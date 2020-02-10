@@ -28,3 +28,14 @@ def unsubscribe_user(user_id, event):
         json={'event': event})
     return req.status_code
 
+
+def get_dashboard_users(d_id):
+    req = requests.get(
+        f'http://127.0.0.1:5000/dashboards/{d_id}/users')
+    return req.json()
+
+
+def get_event_subscribers(event_id, event):
+    req = requests.get(
+        f'http://127.0.0.1:5000/events/{event_id}/subscribers?query={event}')
+    return req.json()
