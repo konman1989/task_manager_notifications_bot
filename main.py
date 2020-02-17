@@ -1,5 +1,6 @@
 import os
-from telebot import TeleBot, types
+from time import sleep
+from telebot import TeleBot, types, logger
 
 import handlers
 
@@ -177,4 +178,9 @@ def unknown_command(message):
 
 
 if __name__ == '__main__':
-    bot.polling(none_stop=True)
+    while True:
+        try:
+            bot.polling(none_stop=True)
+        except Exception as e:
+            logger.error(e)
+            sleep(15)

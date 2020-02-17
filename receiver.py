@@ -1,8 +1,11 @@
 import json
+import os
 import pika
 
 from main import bot
 from handlers import get_event_subscribers
+
+HOST = os.getenv('SERVER_IP_HOST')
 
 
 def callback(ch, method, properties, body):
@@ -39,7 +42,7 @@ def callback(ch, method, properties, body):
 
 
 connection = pika.BlockingConnection(pika.ConnectionParameters(
-        host='127.0.0.1'
+        host=HOST
 ))
 channel = connection.channel()
 
